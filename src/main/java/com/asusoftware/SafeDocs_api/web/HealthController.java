@@ -1,0 +1,14 @@
+package com.asusoftware.SafeDocs_api.web;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+public class HealthController {
+    @GetMapping("/health")
+    public ResponseEntity<Map<String,Object>> health() {
+        return ResponseEntity.ok(Map.of("status","OK","ts",System.currentTimeMillis()));
+    }
+}
