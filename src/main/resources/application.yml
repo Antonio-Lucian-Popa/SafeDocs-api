@@ -88,7 +88,7 @@ app:
       - "https://accounts.google.com"
       - "accounts.google.com"
   mail:
-    from: "no-reply@safedocs.app"
+    from: safedocs.manage@gmail.com
     enabled: true
   storage:
     location: "./uploads"
@@ -119,6 +119,15 @@ spring:
     password: "${DB_PASSWORD}"
   jpa:
     show-sql: true
+  mail:                        # <<-- MUTAT aici (nu sub app)
+    host: "${MAIL_HOST:smtp.gmail.com}"
+    port: ${MAIL_PORT:587}
+    username: "${MAIL_USERNAME}"
+    password: "${MAIL_PASSWORD}"
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+    default-encoding: UTF-8
 
 app:
   security:
@@ -127,7 +136,7 @@ app:
   google:
     clientId: "${GOOGLE_CLIENT_ID:YOUR_DEV_GOOGLE_CLIENT_ID.apps.googleusercontent.com}"
   mail:
-    enabled: false
+    enabled: true               # <<-- acum se creează JavaMailSender în dev
   storage:
     location: "./uploads-dev"
     publicBaseUrl: "http://localhost:8080"
