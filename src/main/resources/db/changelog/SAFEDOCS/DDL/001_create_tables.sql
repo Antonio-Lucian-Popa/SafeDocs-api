@@ -7,6 +7,10 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- rollback DROP EXTENSION IF EXISTS pgcrypto;
 
+-- changeset safedocs:080 extUnaccent
+CREATE EXTENSION IF NOT EXISTS unaccent;
+-- rollback DROP EXTENSION IF EXISTS unaccent;
+
 -- =====================================================================
 -- USERS
 -- =====================================================================
