@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: Antonio Lucian
+
+  - include:
+      file: DDL/001_create_tables.sql
+      relativeToChangelogFile: true

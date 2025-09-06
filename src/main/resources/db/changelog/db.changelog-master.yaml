@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: SAFEDOCS/master.yaml
+      relativeToChangelogFile: true

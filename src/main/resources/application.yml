@@ -1,0 +1,193 @@
+# =====================================================================
+# COMMON (valabil pentru toate profilele)
+# =====================================================================
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: SafeDocs-api
+
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+    time-zone: Europe/Bucharest
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 600000
+      connection-timeout: 30000
+      pool-name: safedocs-hikari
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    hibernate:
+      ddl-auto: validate
+
+  liquibase:
+    enabled: true
+    drop-first: false # Drops and creates scheme from scratch on every start
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 70MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+
+app:
+  security:
+    jwt:
+      issuer: "safedocs"
+      secret: "dev-only-change-me"     # suprascrie �n prod
+      algorithm: HS256
+      accessTokenTtlMinutes: 15
+      refreshTokenTtlDays: 30
+    cors:
+      allowed-origins:
+        - "http://localhost:5173"
+        - "http://localhost:3000"
+      allowed-methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      allowed-headers: "Authorization,Content-Type,Accept,Origin,User-Agent,Referer"
+      allow-credentials: true
+  google:
+    clientId: "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+    issuers:
+      - "https://accounts.google.com"
+      - "accounts.google.com"
+  mail:
+    from: "no-reply@safedocs.app"
+    enabled: true
+  storage:
+    location: "./uploads"
+    publicBaseUrl: "http://localhost:8080"
+  reminders:
+    dailyHour: 7
+    timezone: "Europe/Bucharest"
+    offsets: [30, 7, 1]
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+# =====================================================================
+# DEV PROFILE
+# =====================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: "${DB_URL}"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+  jpa:
+    show-sql: true
+
+app:
+  security:
+    jwt:
+      secret: "${JWT_SECRET:dev-please-change-this-super-long-secret}"
+  google:
+    clientId: "${GOOGLE_CLIENT_ID:YOUR_DEV_GOOGLE_CLIENT_ID.apps.googleusercontent.com}"
+  mail:
+    enabled: false
+  storage:
+    location: "./uploads-dev"
+    publicBaseUrl: "http://localhost:8080"
+
+# =====================================================================
+# PROD PROFILE
+# =====================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: "${DB_URL}"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+  jpa:
+    show-sql: false
+  mail:
+    host: "${MAIL_HOST}"
+    port: ${MAIL_PORT:587}
+    username: "${MAIL_USERNAME}"
+    password: "${MAIL_PASSWORD}"
+    properties:
+         mail:
+           smtp:
+             auth: true
+             starttls:
+               enable: true
+    default-encoding: UTF-8
+
+app:
+  security:
+    jwt:
+      secret: "${JWT_SECRET}"
+      algorithm: "${JWT_ALGORITHM:HS256}"
+  google:
+    clientId: "${GOOGLE_CLIENT_ID}"
+  mail:
+    enabled: true
+  storage:
+    location: "${STORAGE_LOCATION:/var/lib/safedocs/uploads}"
+    publicBaseUrl: "${PUBLIC_BASE_URL:https://api.safedocs.app}"
+
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  file:
+    name: "${LOG_FILE:/var/log/safedocs/app.log}"
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
