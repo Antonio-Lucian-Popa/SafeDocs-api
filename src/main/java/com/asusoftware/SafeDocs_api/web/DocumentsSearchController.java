@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/documents")
@@ -26,49 +27,23 @@ public class DocumentsSearchController {
     private EntityManager em;
 
     @GetMapping("/search")
-    public ResponseEntity<List<Document>> search(@AuthenticationPrincipal SimplePrincipal me,
-                                                 @RequestParam(required = false) String q,
-                                                 @RequestParam(required = false) String tagKey,
-                                                 @RequestParam(required = false) String tagValue) {
-        var user = currentUser.require(me);
+    public ResponseEntity<List<Document>> search(
+            @AuthenticationPrincipal(expression = "id") UUID userId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String tagKey,
+            @RequestParam(required = false) String tagValue) {
 
-        // Simplu: dacă ai tagKey + tagValue, facem query nativ pe JSONB; altfel căutăm în titlu
+        List<Document> list;
+
         if (tagKey != null && tagValue != null) {
-            var list = em.createNativeQuery("""
-          SELECT * FROM documents
-          WHERE user_id = :uid
-            AND tags ->> :k = :v
-          ORDER BY created_at DESC
-          """, Document.class)
-                    .setParameter("uid", user.getId())
-                    .setParameter("k", tagKey)
-                    .setParameter("v", tagValue)
-                    .getResultList();
-            return ResponseEntity.ok(list);
+            list = docs.findByUserIdAndTag(userId, tagKey, tagValue);
+        } else if (q != null && !q.isBlank()) {
+            list = docs.findByUserIdAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(userId, q);
+        } else {
+            list = docs.findTop50ByUserIdOrderByCreatedAtDesc(userId);
         }
 
-        if (q != null && !q.isBlank()) {
-            var list = em.createNativeQuery("""
-          SELECT * FROM documents
-          WHERE user_id = :uid
-            AND unaccent(lower(title)) LIKE unaccent(lower(:q))
-          ORDER BY created_at DESC
-          """, Document.class)
-                    .setParameter("uid", user.getId())
-                    .setParameter("q", "%" + q + "%")
-                    .getResultList();
-            return ResponseEntity.ok(list);
-        }
-
-        // fallback: ultimele documente
-        var list = em.createNativeQuery("""
-        SELECT * FROM documents
-        WHERE user_id = :uid
-        ORDER BY created_at DESC
-        LIMIT 50
-        """, Document.class)
-                .setParameter("uid", user.getId())
-                .getResultList();
         return ResponseEntity.ok(list);
     }
+
 }
