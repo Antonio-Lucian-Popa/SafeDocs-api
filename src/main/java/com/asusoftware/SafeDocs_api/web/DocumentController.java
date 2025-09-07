@@ -2,6 +2,7 @@ package com.asusoftware.SafeDocs_api.web;
 
 import com.asusoftware.SafeDocs_api.auth.SimplePrincipal;
 import com.asusoftware.SafeDocs_api.domain.Document;
+import com.asusoftware.SafeDocs_api.domain.User;
 import com.asusoftware.SafeDocs_api.dto.CreateDocumentRequest;
 import com.asusoftware.SafeDocs_api.dto.DocumentResponse;
 import com.asusoftware.SafeDocs_api.repo.DocumentRepository;
@@ -33,7 +34,8 @@ public class DocumentController {
     @PostMapping
     public ResponseEntity<DocumentResponse> create(@AuthenticationPrincipal SimplePrincipal me,
                                                    @RequestBody @Valid CreateDocumentRequest req) {
-        Document d = docService.createMeta(me.id(), req.title(), req.folderId(), req.expiresAt(), req.tags());
+        User user = currentUser.require(me);
+        Document d = docService.createMeta(user, req.title(), req.folderId(), req.expiresAt(), req.tags());
         return ResponseEntity.ok(new DocumentResponse(d.getId(), d.getTitle(),
                 d.getFolder() != null ? d.getFolder().getId() : null,
                 d.getFilePath(), d.getMimeType(), d.getFileSize(), d.getExpiresAt()));

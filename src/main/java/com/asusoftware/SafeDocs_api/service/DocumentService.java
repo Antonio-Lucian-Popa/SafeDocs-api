@@ -4,6 +4,7 @@ package com.asusoftware.SafeDocs_api.service;
 import com.asusoftware.SafeDocs_api.domain.Document;
 import com.asusoftware.SafeDocs_api.domain.DocumentVersion;
 import com.asusoftware.SafeDocs_api.domain.Folder;
+import com.asusoftware.SafeDocs_api.domain.User;
 import com.asusoftware.SafeDocs_api.repo.DocumentRepository;
 import com.asusoftware.SafeDocs_api.repo.DocumentVersionRepository;
 import com.asusoftware.SafeDocs_api.repo.FolderRepository;
@@ -22,12 +23,13 @@ public class DocumentService {
     private final FolderRepository folders;
 
     @Transactional
-    public Document createMeta(UUID userId, String title, UUID folderId, Instant expiresAt, java.util.Map<String,Object> tags) {
+    public Document createMeta(User user, String title, UUID folderId, Instant expiresAt, java.util.Map<String,Object> tags) {
         Folder folder = null;
         if (folderId != null) folder = folders.findById(folderId).orElseThrow(() -> new IllegalArgumentException("Folder not found"));
 
+
         var d = Document.builder()
-                .user(null) // setezi user-ul în controller din principal, sau încarci entitatea User
+                .user(user) // setezi user-ul în controller din principal, sau încarci entitatea User
                 .folder(folder)
                 .title(title)
                 .filePath("") // setăm după upload
