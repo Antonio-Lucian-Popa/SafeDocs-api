@@ -4,6 +4,7 @@ import com.asusoftware.SafeDocs_api.auth.CurrentUser;
 import com.asusoftware.SafeDocs_api.auth.SimplePrincipal;
 import com.asusoftware.SafeDocs_api.domain.Document;
 import com.asusoftware.SafeDocs_api.domain.DocumentVersion;
+import com.asusoftware.SafeDocs_api.dto.DocumentVersionItem;
 import com.asusoftware.SafeDocs_api.repo.DocumentRepository;
 import com.asusoftware.SafeDocs_api.repo.DocumentVersionRepository;
 import com.asusoftware.SafeDocs_api.service.DocumentVersioningService;
@@ -45,13 +46,16 @@ public class DocumentVersionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DocumentVersion>> list(@AuthenticationPrincipal SimplePrincipal me,
-                                                      @PathVariable UUID id) {
-        var user = currentUser.require(me);
-        Document d = docs.findById(id).orElseThrow();
-        if (!d.getUser().getId().equals(user.getId())) return ResponseEntity.status(403).build();
-        return ResponseEntity.ok(versions.findByDocumentIdOrderByVersionNoDesc(id));
+    public ResponseEntity<List<DocumentVersionItem>> list(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal(expression = "id") UUID userId,
+            @PathVariable UUID id
+    ) {
+        if (userId == null) return ResponseEntity.status(401).build();
+        var items = versions.findItemsForUserAndDocument(userId, id);
+        if (items.isEmpty()) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(items);
     }
+
 
     @PostMapping("/{versionNo}/revert")
     public ResponseEntity<?> revert(@AuthenticationPrincipal SimplePrincipal me,
