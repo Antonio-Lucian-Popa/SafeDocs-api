@@ -57,4 +57,18 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
   """, nativeQuery = true)
     List<Object[]> findByTagRaw(@Param("uid") UUID uid, @Param("k") String key, @Param("v") String val);
 
+    List<Document> findByUserIdAndFolderIdOrderByCreatedAtDesc(UUID userId, UUID folderId);
+    List<Document> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    @Query("""
+  select new com.asusoftware.SafeDocs_api.dto.DocumentListItem(
+    d.id, d.title, d.folder.id, d.mimeType, d.fileSize, d.expiresAt, d.createdAt
+  )
+  from Document d
+  where d.folder.id in (
+    select fs.folder.id from FolderShare fs where fs.sharedWith.id = :uid
+  )
+  order by d.createdAt desc
+""")
+    List<com.asusoftware.SafeDocs_api.dto.DocumentListItem> findSharedWithMe(@Param("uid") UUID userId);
 }

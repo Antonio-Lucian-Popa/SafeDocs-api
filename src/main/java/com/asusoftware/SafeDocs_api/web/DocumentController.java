@@ -2,10 +2,14 @@ package com.asusoftware.SafeDocs_api.web;
 
 import com.asusoftware.SafeDocs_api.auth.SimplePrincipal;
 import com.asusoftware.SafeDocs_api.domain.Document;
+import com.asusoftware.SafeDocs_api.domain.Folder;
 import com.asusoftware.SafeDocs_api.domain.User;
 import com.asusoftware.SafeDocs_api.dto.CreateDocumentRequest;
+import com.asusoftware.SafeDocs_api.dto.DocumentListItem;
 import com.asusoftware.SafeDocs_api.dto.DocumentResponse;
 import com.asusoftware.SafeDocs_api.repo.DocumentRepository;
+import com.asusoftware.SafeDocs_api.repo.FolderRepository;
+import com.asusoftware.SafeDocs_api.repo.FolderShareRepository;
 import com.asusoftware.SafeDocs_api.service.DocumentService;
 import com.asusoftware.SafeDocs_api.service.StorageService;
 import com.asusoftware.SafeDocs_api.utils.FileNameSanitizer;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -30,6 +35,50 @@ public class DocumentController {
     private final DocumentRepository docs;
     private final StorageService storage;
     private final com.asusoftware.SafeDocs_api.auth.CurrentUser currentUser;
+
+    private final FolderRepository folders;
+    private final FolderShareRepository folderShares;
+
+    @GetMapping
+    public ResponseEntity<List<DocumentListItem>> list(
+            @AuthenticationPrincipal SimplePrincipal me,
+            @RequestParam(required = false) UUID folderId
+    ) {
+        User user = currentUser.require(me);
+
+        List<Document> result;
+        if (folderId != null) {
+            Folder f = folders.findById(folderId).orElse(null);
+            if (f == null) return ResponseEntity.notFound().build();
+
+            boolean isOwner = f.getUser().getId().equals(user.getId());
+            boolean isShared = folderShares.existsByFolder_IdAndSharedWith_Id(folderId, user.getId());
+
+            if (!isOwner && !isShared) {
+                return ResponseEntity.status(403).build();
+            }
+
+            result = docs.findByUserIdAndFolderIdOrderByCreatedAtDesc(f.getUser().getId(), folderId);
+        } else {
+            // fallback: ultimele documente ale userului curent
+            result = docs.findByUserIdOrderByCreatedAtDesc(user.getId());
+        }
+
+        var payload = result.stream()
+                .map(d -> new DocumentListItem(
+                        d.getId(),
+                        d.getTitle(),
+                        d.getFolder() != null ? d.getFolder().getId() : null,
+                        d.getMimeType(),
+                        d.getFileSize(),
+                        d.getExpiresAt(),
+                        d.getCreatedAt()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(payload);
+    }
+
 
     @PostMapping
     public ResponseEntity<DocumentResponse> create(@AuthenticationPrincipal SimplePrincipal me,

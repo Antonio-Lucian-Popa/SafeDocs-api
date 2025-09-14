@@ -45,3 +45,27 @@ ALTER TABLE document_versions
 
 -- rollback
 -- ALTER TABLE document_versions ALTER COLUMN checksum_sha256 TYPE CHAR(64);
+
+
+-- =====================================================================
+-- FOLDER SHARES (share direct către utilizatori existenți)
+-- =====================================================================
+
+-- changeset safedocs:110 createTableFolderShares
+CREATE TABLE folder_shares (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    folder_id           UUID NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
+    shared_with_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission          VARCHAR(16) NOT NULL DEFAULT 'READ', -- READ | WRITE
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by_user_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_folder_share UNIQUE (folder_id, shared_with_user_id),
+    CONSTRAINT ck_folder_share_perm CHECK (permission IN ('READ','WRITE'))
+);
+-- rollback DROP TABLE IF EXISTS folder_shares;
+
+-- changeset safedocs:111 indexesFolderShares
+CREATE INDEX IF NOT EXISTS idx_folder_shares_folder ON folder_shares(folder_id);
+CREATE INDEX IF NOT EXISTS idx_folder_shares_shared_with ON folder_shares(shared_with_user_id);
+-- rollback DROP INDEX IF EXISTS idx_folder_shares_folder;
+-- rollback DROP INDEX IF EXISTS idx_folder_shares_shared_with;
