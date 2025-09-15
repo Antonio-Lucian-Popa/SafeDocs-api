@@ -70,4 +70,12 @@ public interface FolderShareRepository extends JpaRepository<FolderShare, UUID> 
   order by fs.folder.name asc
 """)
     List<Folder> findSharedFoldersForUser(@Param("uid") UUID userId);
+
+    @Query("""
+      select (count(fs) > 0)
+      from FolderShare fs
+      where fs.folder.id = :folderId
+        and fs.sharedWith.id = :userId
+    """)
+    boolean existsByFolderIdAndSharedWithId(@Param("folderId") UUID folderId, @Param("userId") UUID userId);
 }
